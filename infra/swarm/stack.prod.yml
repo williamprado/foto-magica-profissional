@@ -1,0 +1,143 @@
+x-common-env: &common-env
+  APP_ENV: production
+  APP_BASE_DIR: /srv/app
+  DATABASE_URL: postgres://fotomagica:${POSTGRES_PASSWORD}@postgres:5432/fotomagica?sslmode=disable
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_TTL: 24h
+  ALLOWED_ORIGINS: https://${PUBLIC_HOST}
+  STORAGE_DRIVER: local
+  LOCAL_STORAGE_PATH: /data/storage
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+  GOOGLE_ANALYSIS_MODEL: ${GOOGLE_ANALYSIS_MODEL:-gemini-2.5-flash}
+  GOOGLE_PROMPT_MODEL: ${GOOGLE_PROMPT_MODEL:-gemini-2.5-flash}
+  GOOGLE_IMAGE_MODEL: ${GOOGLE_IMAGE_MODEL:-gemini-2.5-flash-image}
+  WORKER_POLL_INTERVAL: 5s
+  WORKER_MAX_ATTEMPTS: 3
+  GENERATION_RATE_LIMIT_RPM: 10
+  DEFAULT_PLAN_CODE: growth
+
+x-repo-bootstrap: &repo-bootstrap
+  APP_GIT_REPO: ${APP_GIT_REPO}
+  APP_GIT_REF: ${APP_GIT_REF:-main}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fotomagica
+      POSTGRES_USER: fotomagica
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - fotomagica_postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  api:
+    image: golang:1.25-alpine
+    environment:
+      <<: [*common-env, *repo-bootstrap]
+      HTTP_PORT: 8080
+    volumes:
+      - fotomagica_storage:/data/storage
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache git
+        rm -rf /srv/app
+        git clone --depth 1 --branch "$APP_GIT_REF" "$APP_GIT_REPO" /srv/app
+        cd /srv/app
+        go run ./services/api/cmd/api
+    networks:
+      - internal
+      - waianet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=waianet
+        - traefik.http.routers.fotomagica-api.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/api`)
+        - traefik.http.routers.fotomagica-storage.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/storage`)
+        - traefik.http.routers.fotomagica-api.entrypoints=websecure
+        - traefik.http.routers.fotomagica-storage.entrypoints=websecure
+        - traefik.http.routers.fotomagica-api.tls=true
+        - traefik.http.routers.fotomagica-storage.tls=true
+        - traefik.http.routers.fotomagica-api.priority=30
+        - traefik.http.routers.fotomagica-storage.priority=25
+        - traefik.http.routers.fotomagica-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+        - traefik.http.routers.fotomagica-storage.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+        - traefik.http.services.fotomagica-api.loadbalancer.server.port=8080
+        - traefik.http.middlewares.fotomagica-api-strip.stripprefix.prefixes=/api
+        - traefik.http.routers.fotomagica-api.middlewares=fotomagica-api-strip
+
+  worker:
+    image: golang:1.25-alpine
+    environment:
+      <<: [*common-env, *repo-bootstrap]
+    volumes:
+      - fotomagica_storage:/data/storage
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache git
+        rm -rf /srv/app
+        git clone --depth 1 --branch "$APP_GIT_REF" "$APP_GIT_REPO" /srv/app
+        cd /srv/app
+        go run ./services/worker/cmd/worker
+    networks:
+      - internal
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  web-client:
+    image: node:20-alpine
+    environment:
+      <<: *repo-bootstrap
+      VITE_API_BASE_URL: https://${PUBLIC_HOST}/api
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache git
+        rm -rf /srv/app
+        git clone --depth 1 --branch "$APP_GIT_REF" "$APP_GIT_REPO" /srv/app
+        cd /srv/app
+        npm ci
+        npm run build -w apps/web-client
+        npx serve -s apps/web-client/dist -l 4173
+    networks:
+      - waianet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=waianet
+        - traefik.http.routers.fotomagica-web.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/`)
+        - traefik.http.routers.fotomagica-web.entrypoints=websecure
+        - traefik.http.routers.fotomagica-web.tls=true
+        - traefik.http.routers.fotomagica-web.priority=1
+        - traefik.http.routers.fotomagica-web.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+        - traefik.http.services.fotomagica-web.loadbalancer.server.port=4173
+
+volumes:
+  fotomagica_postgres:
+  fotomagica_storage:
+
+networks:
+  internal:
+    driver: overlay
+  waianet:
+    external: true

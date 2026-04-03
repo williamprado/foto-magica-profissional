@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #07070a;
+  background: #ffffff;
+  font-family: "Satoshi", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(0, 241, 124, 0.14), transparent 18%),
+    linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input,
+textarea {
+  @apply border border-line bg-white px-5 py-3 outline-none transition focus:border-ink focus:ring-0;
+}
+
+textarea {
+  resize: vertical;
+}
+
