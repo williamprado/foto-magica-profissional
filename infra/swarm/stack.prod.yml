@@ -36,7 +36,7 @@ services:
         condition: on-failure
 
   api:
-    image: golang:1.25.0-alpine3.21
+    image: golang:1.25.0
     environment:
       <<: [*common-env, *repo-bootstrap]
       HTTP_PORT: 8080
@@ -51,8 +51,8 @@ services:
         rm -rf /srv/app
         git clone --depth 1 --branch "$APP_GIT_REF" "$APP_GIT_REPO" /srv/app
         cd /srv/app
-        go version
-        go run ./services/api/cmd/api
+        /usr/local/go/bin/go version
+        /usr/local/go/bin/go run ./services/api/cmd/api
     networks:
       - internal
       - waianet
@@ -78,7 +78,7 @@ services:
         - traefik.http.routers.fotomagica-api.middlewares=fotomagica-api-strip
 
   worker:
-    image: golang:1.25.0-alpine3.21
+    image: golang:1.25.0
     environment:
       <<: [*common-env, *repo-bootstrap]
     volumes:
@@ -92,8 +92,8 @@ services:
         rm -rf /srv/app
         git clone --depth 1 --branch "$APP_GIT_REF" "$APP_GIT_REPO" /srv/app
         cd /srv/app
-        go version
-        go run ./services/worker/cmd/worker
+        /usr/local/go/bin/go version
+        /usr/local/go/bin/go run ./services/worker/cmd/worker
     networks:
       - internal
     deploy:
