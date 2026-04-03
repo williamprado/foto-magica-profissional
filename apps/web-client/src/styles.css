@@ -23,10 +23,19 @@ body {
 
 input,
 textarea {
-  @apply border border-line bg-white px-5 py-3 outline-none transition focus:border-ink focus:ring-0;
+  border: 1px solid #e6e9ef;
+  background: #ffffff;
+  padding: 0.75rem 1.25rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #07070a;
+  box-shadow: none;
 }
 
 textarea {
   resize: vertical;
 }
-
