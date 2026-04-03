@@ -1,31 +1,8 @@
 # Foto Magica Profissional
 
-SaaS multi-tenant para geração de retratos profissionais com IA, inspirado no fluxo de produtos como o Snapi, mas implementado de forma original com Go, React, worker assíncrono, créditos, billing e deploy em Docker Swarm.
+Geração de retratos profissionais com IA,  implementado de forma original com Go, React, worker assíncrono, créditos, billing e deploy em Docker Swarm.
 
-## Stack
 
-- Backend: Go 1.25 + Gin + pgx
-- Frontend: React + TypeScript + Tailwind + Vite
-- Banco: PostgreSQL
-- Worker: Go
-- Storage: local ou S3/MinIO
-- AI: Google GenAI via `google.golang.org/genai`
-- Orquestração: Docker Swarm + Traefik + Portainer
-
-## Estrutura
-
-```text
-/apps
-  /web-client
-  /web-admin
-/services
-  /api
-  /worker
-/internal
-/packages
-/infra
-/docs
-```
 
 ## Execução local
 
@@ -62,11 +39,11 @@ Ele foi preparado para uso com:
 - rede externa `waianet`
 - Traefik já existente
 - Portainer stack
-- domínio `fotomagica.wapainel.com.br`
+- domínio 
 
 ### Variáveis de stack
 
-- `PUBLIC_HOST=fotomagica.wapainel.com.br`
+- `PUBLIC_HOST=fotomagica.wcom.br`
 - `TRAEFIK_CERT_RESOLVER=letsencrypt`
 - `POSTGRES_PASSWORD=...`
 - `JWT_SECRET=...`
@@ -92,7 +69,7 @@ O stack de produção atual foi preparado para bootstrap direto do repositório 
 
 ## Validação já coberta na base
 
-- Estrutura multi-tenant
+
 - RBAC e JWT
 - Migrations automáticas
 - Créditos e transações
