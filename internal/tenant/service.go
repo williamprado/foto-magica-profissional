@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -52,10 +53,5 @@ func (r Repository) FindBySlug(ctx context.Context, slug string) (Tenant, error)
 }
 
 type pgxTx interface {
-	QueryRow(ctx context.Context, sql string, args ...any) rowScanner
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
-
-type rowScanner interface {
-	Scan(dest ...any) error
-}
-

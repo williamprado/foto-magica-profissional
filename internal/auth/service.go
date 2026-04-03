@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
+	httpx "github.com/williamprado/foto-magica-profissional/internal/http"
 	"github.com/williamprado/foto-magica-profissional/internal/rbac"
 	"github.com/williamprado/foto-magica-profissional/internal/tenant"
 )
@@ -220,7 +221,7 @@ func (s Service) Me(ctx context.Context, claims SessionClaims) (Session, error) 
 		Name:     user.TenantName,
 		PlanCode: user.TenantPlan,
 		Status:   "active",
-	}), nil
+	})
 }
 
 func (s Service) newSession(user User, tenantRecord tenant.Tenant) (Session, error) {
