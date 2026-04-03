@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,10 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
-	httpx "github.com/williamprado/foto-magica-profissional/internal/http"
 	"github.com/williamprado/foto-magica-profissional/internal/rbac"
 	"github.com/williamprado/foto-magica-profissional/internal/tenant"
 )
+
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type JWTManager interface {
 	Issue(SessionClaims) (string, time.Time, error)
@@ -194,11 +196,11 @@ func (s Service) Register(ctx context.Context, input RegisterInput) (Session, er
 func (s Service) Login(ctx context.Context, input LoginInput) (Session, error) {
 	user, err := s.repo.FindByEmail(ctx, input.Email, input.TenantSlug)
 	if err != nil {
-		return Session{}, httpx.NewError(401, "invalid_credentials", "email or password invalid")
+		return Session{}, ErrInvalidCredentials
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
-		return Session{}, httpx.NewError(401, "invalid_credentials", "email or password invalid")
+		return Session{}, ErrInvalidCredentials
 	}
 
 	return s.newSession(user, tenant.Tenant{

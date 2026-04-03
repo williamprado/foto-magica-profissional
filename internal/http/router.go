@@ -102,6 +102,10 @@ func registerAuthRoutes(router *gin.Engine, authService auth.Service, jwtManager
 		}
 		session, err := authService.Login(c.Request.Context(), input)
 		if err != nil {
+			if errors.Is(err, auth.ErrInvalidCredentials) {
+				Fail(c, NewError(http.StatusUnauthorized, "invalid_credentials", "email or password invalid"))
+				return
+			}
 			Fail(c, err)
 			return
 		}
